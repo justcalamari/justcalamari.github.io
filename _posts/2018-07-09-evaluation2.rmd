@@ -1,11 +1,9 @@
 ---
-layout: post
 title: "Going Beyond Version Bumping"
 author: Justin Calamari
 date: 2018-07-09 10:00 -0400
 output: pdf_document
 urlcolor: blue
-categories: jekyll update
 ---
 
 In my [last post]({{ site.baseurl }}{{% post_url 2018-06-11-introduction

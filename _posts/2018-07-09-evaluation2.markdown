@@ -29,11 +29,13 @@ development of new functionality for the bot.
 
 Conda-build 3 defines a Jinja2 function to specify compiler packages.
 Recipes can include for example
+{% raw %}
 ```
 requirements:
   build:
-    - \{\{ compiler("c") \}\}
+    - {{ compiler("c") }}
 ```
+{% endraw %}
 which means the package needs to be built with C compilers.
 
 Anaconda 5.0 switched from OS-provided compiler tools to their own

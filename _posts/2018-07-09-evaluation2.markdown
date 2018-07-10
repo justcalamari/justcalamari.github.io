@@ -34,7 +34,7 @@ Recipes can include for example
 ```
 requirements:
   build:
-    - {{ compiler("c") }}
+    - {{ compiler('c') }}
 ```
 {% endraw %}
 which means the package needs to be built with C compilers.

@@ -100,4 +100,4 @@ issue another PR suggesting noarch.
 [cf-scripts]: https://github.com/regro/cf-scripts
 [CJ]: https://github.com/CJ-Wright
 [smithy]: https://github.com/conda-forge/conda-smithy
-[pinning]: https://github.com/conda-forge/conda-forge-pinning-feedstock/blob/master/recipe/conda_build_config.yaml`:w
+[pinning]: https://github.com/conda-forge/conda-forge-pinning-feedstock/blob/master/recipe/conda_build_config.yaml

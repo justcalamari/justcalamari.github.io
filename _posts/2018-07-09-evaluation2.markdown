@@ -7,7 +7,7 @@ categories: jekyll update
 ---
 
 In my [last post]({{ site.baseurl }}{% post_url
-2018-06-11-introduction.markdown %}}), I introduced the
+2018-06-11-introduction %}}), I introduced the
 [cf-autotick-bot][cf-scripts], which tracks the version of packages on the
 conda-forge channel and automatically updates recipes with the most recent
 version of the source code. As I mentioned in my previous post, the bot

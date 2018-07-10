@@ -17,7 +17,7 @@ potential for much more than just bumping the version.
 
 ## The Migrator Class
 
-Recently [\@CJ-Wright][CJ] added the `Migrator` class to bot's source code.
+Recently [@CJ-Wright][CJ] added the `Migrator` class to bot's source code.
 Now, instead of explicity running the version bumping code on all
 feedstocks, the bot runs a set of `Migrator` instances on each feedstock. By
 putting the version bumping code in a subclass of `Migrator`, the bot can
@@ -32,7 +32,7 @@ Recipes can include for example
 ```
 requirements:
   build:
-    - {{ compiler("c") }}
+    - \{\{ compiler("c") \}\}
 ```
 which means the package needs to be built with C compilers.
 

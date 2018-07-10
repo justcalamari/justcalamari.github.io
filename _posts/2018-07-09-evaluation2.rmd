@@ -2,7 +2,6 @@
 title: "Going Beyond Version Bumping"
 author: Justin Calamari
 date: 2018-07-09 10:00 -0400
-output: pdf_document
 urlcolor: blue
 ---
 

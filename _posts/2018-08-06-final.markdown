@@ -37,6 +37,7 @@ This can be accomplished by searching the meta.yaml for the pattern
 `number:\s*[0-9]+` and increasing the number by one; however, this method
 fails on the many recipes that use a Jinja variable to store the build
 number, e.g.
+
 {% raw %}
 ```
 {% set build = 0 %}
@@ -45,21 +46,22 @@ build:
   number: {{ build }}
 ```
 {% endraw %}
-In this case, the bot should update the Jinja variable rather than the
-`number: {{ build }}` line. My first contribution for the summer
-([regro/cf-scripts#148][148]) was to make sure the bot updates the Jinja
-variable in this case. This PR was made when the bot's only functionality
-was version bumping, so the build number is reset to 0, but the same
-technique to update the Jinja variable was used when I wrote the rebuild
-migrator ([regro/cf-scripts#246][246]), which increases the build number of
-a recipe by one.
+
+In this case, the bot should update the Jinja variable rather than the {%
+raw %}`number: {{ build }}`{% endraw %} line. My first contribution for the
+summer ([regro/cf-scripts#148][148]) was to make sure the bot updates the
+Jinja variable in this case. This PR was made when the bot’s only
+functionality was version bumping, so the build number is reset to 0, but
+the same technique to update the Jinja variable was used when I wrote the
+rebuild Migrator ([regro/cf-scripts#246][246]), which increases the build
+number of a recipe by one.
 
 All Migrator objects have the methods `migrate` and `filter`. The `migrate`
 method performs a desired update to a recipe, while `filter` determines if a
 package needs the be migrated. In the rebuild migrator, `migrate` increases
 the build number by one, while `filter` checks if the package is ready to be
-rebuilt. Since a package should only be rebuilt after all of its
-dependencies are rebuilt, `filter` checks all of a package's dependencies
+rebuilt.  Since a package should only be rebuilt after all of its
+dependencies are rebuilt, `filter` checks all of a package’s dependencies
 and filters the package out if any of its dependencies that require
 rebuilding have not yet been rebuilt. This way the bot will only create a PR
 if a package is ready to be rebuilt, ensuring that rebuilds are triggered in
@@ -67,28 +69,33 @@ the correct order.
 
 With the rebuild migrator, the bot can create PRs bumping the build number
 of all packages that need to be built using the new compilers, but this
-migrator does not update the package's build requirements, so it would just
+migrator does not update the package’s build requirements, so it would just
 be rebuilt with the old compilers! Conda-build 3 introduced a new Jinja2
 function, `compiler()`, which allows for dynamic specification of compiler
 packages. If a recipe requires a C compiler, for instance, the recipe would
 include
+
+{% raw %}
 ```
 requirements:
   build:
     - {{ compiler('c') }}
 ```
+{% endraw %}
+
 The package that this variable is replaced by is defined in the
 `conda_build_config.yaml` file. If the recipe does not define compilers in
-its `conda_build_config.yaml` it uses the packages defined in conda-forge's
+its `conda_build_config.yaml` it uses the packages defined in conda-forge’s
 central pinning file at
 [https://github.com/conda-forge/conda-forge-pinning-feedstock/blob/master/recipe/conda_build_config.yaml](https://github.com/conda-forge/conda-forge-pinning-feedstock/blob/master/recipe/conda_build_config.yaml).
-Currently conda-forge's pinning file uses the old compilers, so any package
-using conda-build 3's Jinja2 syntax will be built with the old compilers,
-but by changing the definintion in the pinning file, the different compilers
-could be used. Therefore, before switching to the new compilers, recipes
-should use this Jinja2 syntax. This can be accomplished with a migrator that
-runs the update-cb3 command from conda-smithy on recipes that need this new
-syntax, so I added this migrator to the bot ([regro/cf-scripts#185][185]).
+Currently conda-forge’s pinning file uses the old compilers, so any package
+using conda-build 3’s Jinja2 syntax will be built with the old compilers,
+but by changing the definition in the pinning file, different compilers,
+including those used by Anaconda, could be used. Therefore, before switching
+to Anaconda’s toolchains, recipes should first be adapted to use this Jinja2
+syntax. This can be accomplished with a migrator that runs the update-cb3
+command from conda-smithy on recipes that need this new syntax, so I added
+this migrator to the bot ([regro/cf-scripts#185][185]).
 
 Because there are over 1500 recipes that need the new compiler syntax, this
 migration will take a long time to complete, and the migration to the new
@@ -99,16 +106,17 @@ it is not really necessary to wait for the syntax migration to finish before
 starting the compiler migration since any packages already using the new
 syntax can be rebuilt so long as they are not waiting on rebuilds of
 dependencies; but then it would be nice that the bot run the syntax
-migration on a package's dependencies before on the package itself. This
+migration on a package’s dependencies before on the package itself. This
 way, the dependencies can be rebuilt with the new compilers even before
 package has the new syntax. This can be accomplished by performing a
 topological sort on the graph and running the migrations in topological sort
 order. Topological sort only works on an acyclic graph, though, and
-conda-forge's dependency graph contains some cycles. Certain edges would
+conda-forge’s dependency graph contains some cycles. Certain edges would
 need to be excised to remove all cycles from the graph. This introduces some
 difficulties, however, since removing edges may make certain nodes
 unreachable from the nodes corresponding to compilers. The solution to this
 is to remove edges while performing the topological sort.
+
 ```python
 def cyclic_topological_sort(graph, sources):
     g2 = deepcopy(graph)
@@ -125,11 +133,12 @@ def _visit(graph, node, order):
         _visit(graph, n, order)
     order.append(node)
 ```
+
 The above code performs a typical topological sort starting from the input
-`source` nodes, but instead of failing when a cycle is encountered, it
-simply ignores the edge completing the cycle, effectively removing it from
-the graph. In order to bring conda-forge closer to starting compiler
-migrations, I implemented this topological sorting algorithm
+source nodes, but instead of failing when a cycle is encountered, it simply
+ignores the edge completing the cycle, effectively removing it from the
+graph. In order to bring conda-forge closer to starting compiler migrations,
+I implemented this topological sorting algorithm
 ([regro/cf-scripts#161][161] and [regro/cf-scripts#225][225]).
 
 With all of the migrations that need to be done in order to switch to the
@@ -137,27 +146,27 @@ new compilers, conda-forge will need to run a lot of builds on Travis CI,
 CircleCI, and AppVeyor. There is little that can be done to curb our CI
 usage besides limiting the number of migrations we issue, but it does help
 for packages to be build noarch. This would mean the package would only need
-to be built once (on CircleCI) freeing up CI resources for other builds. This
-would not work with packages built with compilers, but it would help with CI
-usage from standard version bump builds. Building as many packages as
-possible with noarch would drastically reduce CI usage, which is especially
-important while the syntax and compiler migration is occurring. Therefore, I
-wrote a migrator to add noarch to all possible packages
+to be built once (on CircleCI) freeing up CI resources for other builds.
+This would not work with packages built with compilers, but it would help
+with CI usage from standard version bump builds. Building as many packages
+as possible with noarch would drastically reduce CI usage, which is
+especially important while the syntax and compiler migration is occurring.
+Therefore, I wrote a migrator to add noarch to all possible packages
 ([regro/cf-scripts#199][199]).
 
 In addition to the new Jinja2 syntax for compilers, conda-build 3 introduces
 other new features. One of the new features is the ability to specify
 multiple locations of the source code for the package. When the bot bumps
-the version of a feedstock, the url to the source code also changes to the
-url for the new version. The bot then needs to update the checksums for each
-of these urls. Initially, the bot assumed there was a single url per
-feedstock, so it would find a url, hash it, and replace all checksums in the
-recipe with the hash for that url. To make the bot compatible with
-recipes with multiple urls, I gave the bot the ability to update each checksum
-with the correct hash ([regro/cf-scripts#163][163] and
+the version of a feedstock, the URL to the source code also changes to the
+URL for the new version. The bot then needs to update the checksums for each
+of these URLs. Initially, the bot assumed there was a single URL per
+feedstock, so it would find a URL, hash it, and replace all checksums in the
+recipe with the hash for that URL. To make the bot compatible with recipes
+with multiple URLs, I gave the bot the ability to update each checksum with
+the correct hash ([regro/cf-scripts#163][163] and
 [regro/cf-scripts#182][182]). With this new functionality, the bot helps
 keep conda-forge up-to-date as more recipes take advantage of conda-build
-3's new features.
+3’s new features.
 
 [148]: https://github.com/regro/cf-scripts/pull/148 
 [246]: https://github.com/regro/cf-scripts/pull/246

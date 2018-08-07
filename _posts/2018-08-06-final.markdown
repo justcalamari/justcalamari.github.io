@@ -37,12 +37,14 @@ This can be accomplished by searching the meta.yaml for the pattern
 `number:\s*[0-9]+` and increasing the number by one; however, this method
 fails on the many recipes that use a Jinja variable to store the build
 number, e.g.
+{% raw %}
 ```
 {% set build = 0 %}
 ...
 build:
   number: {{ build }}
 ```
+{% endraw %}
 In this case, the bot should update the Jinja variable rather than the
 `number: {{ build }}` line. My first contribution for the summer
 ([regro/cf-scripts#148][148]) was to make sure the bot updates the Jinja

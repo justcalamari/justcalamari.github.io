@@ -7,28 +7,32 @@ visible: 1
 ---
 
 Binary compatibility is a huge headache in the Python data analytics
-ecosystem. Package builds are very distributed, and builds from a different
-source will likely be incompatible with other sources, due to how specific
-options or versions of build tools can render outputs to be very specific.
-Conda-forge itself helped this problem by ensuring that all builds within
-its ecosystem were built with consistent toolchains and build options.  A
-large headache still remained, however, as the official Anaconda packages
-and conda-forge were not compatible. Users often accidentally mixed these
-two channels, and ended up with broken software.
+ecosystem, as package builds using different options or versions of build
+tools are often incompatible. Conda-forge helped this problem by ensuring
+that all builds within its ecosystem use consistent toolchains and build
+options, but as new versions of packages are releases with a different ABI
+from the older versions, they become incompatible with other conda-forge
+packages built with the old versions. And when Anaconda released its new
+compilers with Anaconda 5.0, conda-forge became incompatible with the
+official Anaconda packages, leading to broken software when users
+accidentally mixed the two channels. One of the major advantages of using
+conda-forge over individual user channels is its consistent build
+environment, which is meant to ensure that software works without much
+effort from the end user; but in light of these challenges, that becomes a
+difficult promise to make.
 
-The release of conda-build 3.0 added support for for Anaconda 5.0 compilers,
-which improves compiler capabilities; however, packages built using these
-compilers are sometimes incompatible with packages built using the older
-compilers on the CI platforms conda-forge uses, so conda-forge does not use
-these compilers yet. This means that all of a package’s dependencies should
-be built with the Anaconda 5.0 compilers before rebuilding the package
-itself.
-
-With its ability to create pull requests with updates to recipes, the
-conda-forge autotick bot, which had originally been used for version
-bumping, is a great tool for performing this rebuild process. My work this
-summer added new functionality to the bot to bring conda-forge closer to
-making the switch to the new compilers.
+These issues cannot be solved so simply as rebuilding all of conda-forge's
+packages, since rebuilding a package to use a different ABI makes it
+incompatible with some packages that depend it. This means that all of a
+package’s dependencies should be rebuilt before rebuilding the package
+itself. Since conda-forge has so many packages and recipe maintainers, it is
+difficult to organize for this process to be done manually. Therefore,
+conda-forge requires some sort of automation to handle this.  With its
+ability to create pull requests with updates to recipes, the conda-forge
+autotick bot, which had originally been used for version bumping, is a great
+tool for performing this rebuild process. My work this summer added new
+functionality to the bot to bring conda-forge closer to making the switch to
+the new compilers.
 
 When conda-forge switches to the new compilers, all packages using compilers
 need to be rebuilt in the proper order. To do this, the bot can create a
@@ -98,24 +102,35 @@ command from conda-smithy on recipes that need this new syntax, so I added
 this migrator to the bot ([regro/cf-scripts#185][185]).
 
 Because there are over 1500 recipes that need the new compiler syntax, this
-migration will take a long time to complete, and the migration to the new
-compilers will have to wait until it is done. Then there are over 1500
-recipes that have to be rebuilt using the new compilers which will again
-take a while to complete, delaying the switch to the new compilers. However,
-it is not really necessary to wait for the syntax migration to finish before
-starting the compiler migration since any packages already using the new
-syntax can be rebuilt so long as they are not waiting on rebuilds of
-dependencies; but then it would be nice that the bot run the syntax
-migration on a package’s dependencies before on the package itself. This
-way, the dependencies can be rebuilt with the new compilers even before
-package has the new syntax. This can be accomplished by performing a
-topological sort on the graph and running the migrations in topological sort
-order. Topological sort only works on an acyclic graph, though, and
-conda-forge’s dependency graph contains some cycles. Certain edges would
-need to be excised to remove all cycles from the graph. This introduces some
+migration will take a long time to complete. One plan for the migration to
+the new compilers could be to wait until all packages are switched to the
+new syntax before starting, but this would likely take far too long, since
+some recipe maintainers are inactive and despite how great the bot is, there
+are certain edge cases that cause it to miss or fail updating feedstocks.
+Identifying and handling all of these edge cases would also take much time
+and take time away from developers who could work on other important issues.
+But since packages already using the new syntax can be rebuilt as soon as
+all of their dependencies are, the compiler migration can be started before
+the syntax migration is finished.
+
+It then become important to identify packages on which many other packages
+depend, as they must be built using the new compilers before anything that
+requires them. This way we can make sure that they are ready to be rebuilt
+so that large sections of the graph are not blocked while waiting on certain
+packages. To help with this I wrote code to find the longest path from each
+package a source node ([regro/cf-scripts#161][161]). A package cannot depend
+on anything with a longer path to the source node, so packages with shorter
+paths should likely be given higher priority. By performing syntax
+migrations in topological sort order, packages with shorter paths to the
+compilers will be made ready for migration to the new compilers as soon as
+possible ([regro/cf-scripts#225][225]).
+
+Topological sort only works on an acyclic graph, though, and conda-forge’s
+dependency graph contains some cycles, so certain edges would need to be
+excised to remove all cycles from the graph. This introduces some
 difficulties, however, since removing edges may make certain nodes
-unreachable from the nodes corresponding to compilers. The solution to this
-is to remove edges while performing the topological sort.
+unreachable from the compiler nodes. The solution to this is to remove edges
+while performing the topological sort.
 
 ```python
 def cyclic_topological_sort(graph, sources):
@@ -134,12 +149,10 @@ def _visit(graph, node, order):
     order.append(node)
 ```
 
-The above code performs a typical topological sort starting from the input
-source nodes, but instead of failing when a cycle is encountered, it simply
-ignores the edge completing the cycle, effectively removing it from the
-graph. In order to bring conda-forge closer to starting compiler migrations,
-I implemented this topological sorting algorithm
-([regro/cf-scripts#161][161] and [regro/cf-scripts#225][225]).
+The above code performs a depth-first topological sort starting from the
+input source nodes, but instead of failing when a cycle is encountered, it
+simply ignores the edge completing the cycle, effectively removing it from
+the graph.
 
 With all of the migrations that need to be done in order to switch to the
 new compilers, conda-forge will need to run a lot of builds on Travis CI,
@@ -168,6 +181,34 @@ the correct hash ([regro/cf-scripts#163][163] and
 keep conda-forge up-to-date as more recipes take advantage of conda-build
 3’s new features.
 
+There are many challenges in maintaining a package ecosystem, but through
+automation, some of the pain in dealing with these issues can be alleviated.
+Automation also makes the process easy to reproduce, so my work this summer
+will help conda-forge not just in switching to Anaconda's new toolchains,
+but whenever a subsection of the graph needs to be rebuilt for binary
+compatibility. While the bot is mostly ready for the compiler switch there
+is still some work to be done before it can start. Conda-smithy needs to be
+updated so that packages are built using both the old and new compilers,
+which are pushed to different channels. A pull request for this is currently
+in progress ([conda-forge/conda-smithy#836][836]). While the compiler
+migration can start before all syntax migration is finished, eventually
+every package should be rebuilt and will need the new syntax. There are many
+packages that have syntax migration PRs that have not been merged yet, and
+many others that the bot is unable to update. These packages should be
+identified to that conda-forge can proceed with rebuilds of these packages
+and any that depend on them. Also, it is important to identify which of
+these packages are most important to update (have short paths to compilers
+and many packages that depend on them) so that they are given priority. Even
+when everything is built using the new compilers, conda-forge is not
+completely finished with rebuilding. When a pinning in conda-forge's central
+pinning file changes, packages that use them should be rebuilt. Most of the
+infrastructure for this is in place now, but it requires creating a
+subgraph, instantiating a rebuild Migrator to act on that subgraph, and
+adding that code to the bot. But since the bot already inspects feedstocks
+to find the version, it should be able to inspect
+conda-forge-pinning-feedstock, identify pinning changes, and automatically
+start a rebuild Migrator.
+
 [148]: https://github.com/regro/cf-scripts/pull/148 
 [246]: https://github.com/regro/cf-scripts/pull/246
 [185]: https://github.com/regro/cf-scripts/pull/185
@@ -176,3 +217,4 @@ keep conda-forge up-to-date as more recipes take advantage of conda-build
 [199]: https://github.com/regro/cf-scripts/pull/199
 [163]: https://github.com/regro/cf-scripts/pull/163
 [182]: https://github.com/regro/cf-scripts/pull/182
+[836]: https://github.com/conda-forge/conda-smithy/pull/836

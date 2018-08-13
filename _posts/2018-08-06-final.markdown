@@ -6,20 +6,22 @@ categories: jekyll update
 visible: 1
 ---
 
-Binary compatibility is a huge headache in the Python data analytics
-ecosystem, as package builds using different options or versions of build
-tools are often incompatible. Conda-forge helped this problem by ensuring
-that all builds within its ecosystem use consistent toolchains and build
-options, but as new versions of packages are releases with a different ABI
-from the older versions, they become incompatible with other conda-forge
-packages built with the old versions. And when Anaconda released its new
-compilers with Anaconda 5.0, conda-forge became incompatible with the
-official Anaconda packages, leading to broken software when users
-accidentally mixed the two channels. One of the major advantages of using
-conda-forge over individual user channels is its consistent build
-environment, which is meant to ensure that software works without much
-effort from the end user; but in light of these challenges, that becomes a
-difficult promise to make.
+Binary compatibility is critical in the Python data analytics ecosystem, as
+incompatibility between packages can result in broken software. It would be
+catostrophic, for instance, if a new release of numpy caused all
+numpy-dependent software to stop functioning. It is therefore necessary that
+package managers are careful to only install packages compatible with each
+other. Conda-forge alleviated this problem by ensuring that all builds
+within its ecosystem use consistent toolchains and build options, but ABI
+changes in new releases of critical packages makes compatibility a rapidly
+moving target, threatening to tear conda-forge apart at the seams or consign
+our stack to be out of date.  This problem has been exacerbated by
+Anaconda's new compilers, which caused conda-forge to become incompatible
+with the offical Anaconda packages, leading to broken software when users
+mix the two channels. One of the major advantages of using conda-forge over
+individual user channels is its consistent build environment, which is meant
+to ensure that software works without much effort from the end user; but in
+light of these challenges, that becomes a difficult promise to make.
 
 These issues cannot be solved so simply as rebuilding all of conda-forge's
 packages, since rebuilding a package to use a different ABI makes it
@@ -113,7 +115,7 @@ But since packages already using the new syntax can be rebuilt as soon as
 all of their dependencies are, the compiler migration can be started before
 the syntax migration is finished.
 
-It then become important to identify packages on which many other packages
+It then became important to identify packages on which many other packages
 depend, as they must be built using the new compilers before anything that
 requires them. This way we can make sure that they are ready to be rebuilt
 so that large sections of the graph are not blocked while waiting on certain

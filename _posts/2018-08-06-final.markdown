@@ -8,7 +8,7 @@ visible: 1
 
 Binary compatibility is critical in the Python data analytics ecosystem, as
 incompatibility between packages can result in broken software. It would be
-catostrophic, for instance, if a new release of numpy caused all
+catastrophic, for instance, if a new release of numpy caused all
 numpy-dependent software to stop functioning. It is therefore necessary that
 package managers are careful to only install packages compatible with each
 other. Conda-forge alleviated this problem by ensuring that all builds
@@ -17,7 +17,7 @@ changes in new releases of critical packages makes compatibility a rapidly
 moving target, threatening to tear conda-forge apart at the seams or consign
 our stack to be out of date.  This problem has been exacerbated by
 Anaconda's new compilers, which caused conda-forge to become incompatible
-with the offical Anaconda packages, leading to broken software when users
+with the official Anaconda packages, leading to broken software when users
 mix the two channels. One of the major advantages of using conda-forge over
 individual user channels is its consistent build environment, which is meant
 to ensure that software works without much effort from the end user; but in
@@ -231,7 +231,7 @@ accept, reject, or change. The advances made to the bot this summer helps
 conda-forge with the ever-present challenge of ensuring binary
 compatibility, and provides conda-forge's core team with the tools to
 communicate with recipe maintainers the steps necessary to preserve
-compatiblity as ABI changes are introduced to the ecosystem.
+compatibility as ABI changes are introduced to the ecosystem.
 
 [148]: https://github.com/regro/cf-scripts/pull/148 
 [246]: https://github.com/regro/cf-scripts/pull/246

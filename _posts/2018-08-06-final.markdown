@@ -6,22 +6,34 @@ categories: jekyll update
 visible: 1
 ---
 
-Binary compatibility is critical in the Python data analytics ecosystem, as
-incompatibility between packages can result in broken software. It would be
-catastrophic, for instance, if a new release of numpy caused all
-numpy-dependent software to stop functioning. It is therefore necessary that
-package managers are careful to only install packages compatible with each
-other. Conda-forge alleviated this problem by ensuring that all builds
-within its ecosystem use consistent toolchains and build options, but ABI
-changes in new releases of critical packages makes compatibility a rapidly
-moving target, threatening to tear conda-forge apart at the seams or consign
-our stack to be out of date.  This problem has been exacerbated by
-Anaconda's new compilers, which caused conda-forge to become incompatible
-with the official Anaconda packages, leading to broken software when users
-mix the two channels. One of the major advantages of using conda-forge over
-individual user channels is its consistent build environment, which is meant
-to ensure that software works without much effort from the end user; but in
-light of these challenges, that becomes a difficult promise to make.
+Modern data science has revolutionized practically every imaginable facet of
+life. Such data science has been enabled by the development of languages
+and programs that facilitate manipulation of large amounts of data both
+intuitively and quickly. The intuitive part comes from the language side,
+providing high-level tools such as Python that are easy to work with.
+However, these high-level tools are often slow by nature. Adding in
+compiled libraries that extend and accelerate the high-level tools are
+necessary. As such, binary compatibility among these compiled libraries is
+critical in the Python data analytics ecosystem, as incompatibility between
+packages can result in broken software. It would be catastrophic, for
+instance, if a new release of numpy caused all numpy-dependent software to
+stop functioning. It is therefore necessary that package managers are
+careful to only install packages compatible with each other. PyPI is a
+great resource, but efforts to standardize binaries have been lackluster.
+The more distributed model of Anaconda.org allows any given channel to
+achieve binary consistency, but historically no single channel has had
+enough software to cover most use cases. Conda-forge alleviated this problem
+by ensuring that all builds within its ecosystem use consistent toolchains
+and build options, but ABI changes in new releases of critical packages
+makes compatibility a rapidly moving target, threatening to tear conda-forge
+apart at the seams or consign our stack to be out of date. This problem has
+been exacerbated by Anaconda’s new compilers, which caused conda-forge to
+become incompatible with the official Anaconda packages, leading to broken
+software when users mix the two channels. One of the major advantages of
+using conda-forge over individual user channels is its consistent build
+environment, which is meant to ensure that software works without much
+effort from the end user; but in light of these challenges, that becomes a
+difficult promise to make.
 
 These issues cannot be solved so simply as rebuilding all of conda-forge's
 packages, since rebuilding a package to use a different ABI makes it
@@ -29,7 +41,7 @@ incompatible with some packages that depend it. This means that all of a
 package’s dependencies should be rebuilt before rebuilding the package
 itself. Since conda-forge has so many packages and recipe maintainers, it is
 difficult to organize for this process to be done manually. Therefore,
-conda-forge requires some sort of automation to handle this.  With its
+conda-forge requires some sort of automation to handle this. With its
 ability to create pull requests with updates to recipes, the conda-forge
 autotick bot, which had originally been used for version bumping, is a great
 tool for performing this rebuild process. My work this summer added new
@@ -66,7 +78,7 @@ All Migrator objects have the methods `migrate` and `filter`. The `migrate`
 method performs a desired update to a recipe, while `filter` determines if a
 package needs the be migrated. In the rebuild migrator, `migrate` increases
 the build number by one, while `filter` checks if the package is ready to be
-rebuilt.  Since a package should only be rebuilt after all of its
+rebuilt. Since a package should only be rebuilt after all of its
 dependencies are rebuilt, `filter` checks all of a package’s dependencies
 and filters the package out if any of its dependencies that require
 rebuilding have not yet been rebuilt. This way the bot will only create a PR
